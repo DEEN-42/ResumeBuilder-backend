@@ -10,15 +10,25 @@ import { handleSocketConnection } from './socket/socketHandlers.js';
 
 const app = express();
 const server = createServer(app);
+
+const allowedOrigins = [
+  "https://resumebuilder-frontend-i6nn.vercel.app",
+  "http://localhost:5173"
+];
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ['GET','POST','PUT'],
     credentials: true
   }
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true   // if you use cookies / auth headers
+  })
+);
 import userRoute from './Routes/userRoute.js';
 import resumeRoute from './Routes/resumeRoutes.js';
 import aiRoutes from './Routes/aiRoutes.js';
