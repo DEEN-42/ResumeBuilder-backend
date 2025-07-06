@@ -1,0 +1,21 @@
+import mongoose from "mongoose";
+import { v4 as uuidv4 } from 'uuid';
+
+const resumeSchema = new mongoose.Schema({
+    id: { type: String, default: uuidv4, required: true, unique: true },
+    title: { type: String, required: true },
+    description: { type: String, default: '' },
+    shared: [{ 
+        email: { type: String, required: true },
+        name: { type: String, required: true },
+        profilePicture: { type: String, default: null }
+    }],
+    owner: { type: String, required: true }, 
+    selectedTemplate: { type: String, default: 'iitkg' },
+    globalStyles: { type: mongoose.Schema.Types.Mixed },  
+    resumeData: { type: mongoose.Schema.Types.Mixed },    
+    createdAt: { type: Date, default: Date.now }
+  }, { timestamps: true }
+);
+
+export default mongoose.model("Resume", resumeSchema);
