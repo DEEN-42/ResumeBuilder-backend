@@ -17,9 +17,11 @@ export const scoreATS = async (req, res) => {
         const resume = await Resume.findOne({ id }).lean();
         if (!resume) return res.status(404).json({ message: 'Resume not found' });
 
-        const isOwner = resume.owner === userEmail || resume.ownerEmail === userEmail;
-        const isShared = (Array.isArray(resume.shared) && resume.shared.includes(userEmail)) ||
-                         (Array.isArray(resume.sharedUsers) && resume.sharedUsers.includes(userEmail));
+        // Fixed shared user access check
+        const isOwner = resume.owner === userEmail;
+        const isShared = Array.isArray(resume.shared) && 
+                         resume.shared.some(sharedUser => sharedUser.email === userEmail);
+        
         if (!isOwner && !isShared) {
             return res.status(403).json({ message: 'Unauthorized: Access denied' });
         }
@@ -77,7 +79,7 @@ export const scoreATS = async (req, res) => {
     }
 };
 
-// Helper function for authentication and validation (fixed)
+// Fixed helper function for authentication and validation
 const validateUserAccess = async (req, res) => {
     const { id } = req.body;
     if (!id) {
@@ -90,9 +92,11 @@ const validateUserAccess = async (req, res) => {
         return { error: true, response: res.status(404).json({ success: false, error: 'Resume not found', message: 'Failed to generate suggestions' }) };
     }
 
-    const isOwner = resume.owner === userEmail || resume.ownerEmail === userEmail;
-    const isShared = (Array.isArray(resume.shared) && resume.shared.includes(userEmail)) ||
-                     (Array.isArray(resume.sharedUsers) && resume.sharedUsers.includes(userEmail));
+    // Fixed shared user access check - checking the correct schema structure
+    const isOwner = resume.owner === userEmail;
+    const isShared = Array.isArray(resume.shared) && 
+                     resume.shared.some(sharedUser => sharedUser.email === userEmail);
+
     if (!isOwner && !isShared) {
         return { error: true, response: res.status(403).json({ success: false, error: 'Unauthorized: Access denied', message: 'Failed to generate suggestions' }) };
     }
@@ -135,7 +139,7 @@ export const internships = async (req, res) => {
             CRITICAL: Return the updated internship object directly, not wrapped in a "data" array.
             
             Expected output format (matching input structure exactly):
-            {"title":"<updated_title>","company":"<updated_company>","location":"<updated_location>","duration":"<updated_duration>","description":"<updated_description>"}
+            {"title":"<updated_title>","company":"<updated_company>","duration":"<updated_duration>","description":"<updated_description>"}
 
             User Request: ${userPrompt}
 
@@ -172,7 +176,6 @@ export const projects = async (req, res) => {
         if (validation.error) return validation.response;
         
         const { sectionData, prompt: userPrompt } = req.body;
-        // console.log(sectionData, userPrompt); // Fixed: using userPrompt instead of prompt
         
         const aiPrompt = `
             You are an expert resume consultant. Update the following project data based on the user's request.
@@ -283,7 +286,7 @@ export const awards = async (req, res) => {
             Guidelines:
             - Keep the same JSON structure as input
             - Update the award title and description based on user request
-            - Description should b 1-2 coencise lines explaining the achievement separated by \\n
+            - Description should be 1-2 concise lines explaining the achievement separated by \\n
             - Include specific details like ranking, competition size, or selection criteria
             - Make the award title prestigious and professional
             - Add quantifiable metrics where possible (e.g., "Top 5%", "1st Place")
@@ -440,93 +443,93 @@ export const position = async (req, res) => {
     }
 };
 
-// 8. Extracurricular Activities (Updated to modify existing data)
-export const extracurricular = async (req, res) => {
-    try {
-        const validation = await validateUserAccess(req, res);
-        if (validation.error) return validation.response;
+// // 8. Extracurricular Activities (Updated to modify existing data)
+// export const extracurricular = async (req, res) => {
+//     try {
+//         const validation = await validateUserAccess(req, res);
+//         if (validation.error) return validation.response;
         
-        const { sectionData, prompt: userPrompt } = req.body;
+//         const { sectionData, prompt: userPrompt } = req.body;
 
-        const aiPrompt = `
-            You are an expert resume consultant. Update the following extracurricular activity data based on the user's request.
-            Return ONLY a minified JSON object with the EXACT same structure as the input, but with improved content.
+//         const aiPrompt = `
+//             You are an expert resume consultant. Update the following extracurricular activity data based on the user's request.
+//             Return ONLY a minified JSON object with the EXACT same structure as the input, but with improved content.
             
-            CRITICAL: Return the updated activity object directly, not wrapped in a "data" array.
+//             CRITICAL: Return the updated activity object directly, not wrapped in a "data" array.
             
-            Expected output format (matching input structure exactly):
-            {"title":"<updated_activity_title>","description":"<updated_activity_description>"}
+//             Expected output format (matching input structure exactly):
+//             {"title":"<updated_activity_title>","description":"<updated_activity_description>"}
 
-            User Request: ${userPrompt}
+//             User Request: ${userPrompt}
 
-            Current Extracurricular Activity Data:
-            ${JSON.stringify(sectionData)}
+//             Current Extracurricular Activity Data:
+//             ${JSON.stringify(sectionData)}
 
-            Guidelines:
-            - Keep the same JSON structure as input
-            - Update the activity title and description based on user request
-            - Description should be 2-3 lines highlighting key contributions and impact separated by \\n
-            - Include specific achievements, roles, or recognition received
-            - Focus on soft skills development, teamwork, and personal growth
-            - Use action verbs and quantifiable results where possible
-            - Make the activity showcase well-roundedness and character
-        `;
+//             Guidelines:
+//             - Keep the same JSON structure as input
+//             - Update the activity title and description based on user request
+//             - Description should be 2-3 lines highlighting key contributions and impact separated by \\n
+//             - Include specific achievements, roles, or recognition received
+//             - Focus on soft skills development, teamwork, and personal growth
+//             - Use action verbs and quantifiable results where possible
+//             - Make the activity showcase well-roundedness and character
+//         `;
 
-        const analysis = await generateAIContent(aiPrompt);
+//         const analysis = await generateAIContent(aiPrompt);
         
-        return res.status(200).json({
-            success: true,
-            data: analysis,
-            message: "AI suggestions generated successfully"
-        });
-    } catch (err) {
-        console.error('Extracurricular generation error:', err);
-        res.status(500).json({ success: false, error: 'Failed to generate extracurricular suggestions', message: 'Failed to generate suggestions' });
-    }
-};
+//         return res.status(200).json({
+//             success: true,
+//             data: analysis,
+//             message: "AI suggestions generated successfully"
+//         });
+//     } catch (err) {
+//         console.error('Extracurricular generation error:', err);
+//         res.status(500).json({ success: false, error: 'Failed to generate extracurricular suggestions', message: 'Failed to generate suggestions' });
+//     }
+// };
 
-// 9. Competitions (Updated to modify existing data)
-export const competitions = async (req, res) => {
-    try {
-        const validation = await validateUserAccess(req, res);
-        if (validation.error) return validation.response;
+// // 9. Competitions (Updated to modify existing data)
+// export const competitions = async (req, res) => {
+//     try {
+//         const validation = await validateUserAccess(req, res);
+//         if (validation.error) return validation.response;
         
-        const { sectionData, prompt: userPrompt } = req.body;
+//         const { sectionData, prompt: userPrompt } = req.body;
 
-        const aiPrompt = `
-            You are an expert resume consultant. Update the following competition data based on the user's request.
-            Return ONLY a minified JSON object with the EXACT same structure as the input, but with improved content.
+//         const aiPrompt = `
+//             You are an expert resume consultant. Update the following competition data based on the user's request.
+//             Return ONLY a minified JSON object with the EXACT same structure as the input, but with improved content.
             
-            CRITICAL: Return the updated competition object directly, not wrapped in a "data" array.
+//             CRITICAL: Return the updated competition object directly, not wrapped in a "data" array.
             
-            Expected output format (matching input structure exactly):
-            {"title":"<updated_competition_title>","date":"<updated_date>","points":["<updated_achievement1>","<updated_achievement2>","<updated_achievement3>"]}
+//             Expected output format (matching input structure exactly):
+//             {"title":"<updated_competition_title>","date":"<updated_date>","points":["<updated_achievement1>","<updated_achievement2>","<updated_achievement3>"]}
 
-            User Request: ${userPrompt}
+//             User Request: ${userPrompt}
 
-            Current Competition Data:
-            ${JSON.stringify(sectionData)}
+//             Current Competition Data:
+//             ${JSON.stringify(sectionData)}
 
-            Guidelines:
-            - Keep the same JSON structure as input
-            - Update the competition title, date, and points based on user request
-            - Date should be in format "Month Year"
-            - Points should be 2-4 specific achievements in array format
-            - Include rankings, team size, or selection criteria
-            - Use quantifiable metrics and specific technical details
-            - Make achievements impressive and credible
-            - Focus on skills demonstrated and recognition received
-        `;
+//             Guidelines:
+//             - Keep the same JSON structure as input
+//             - Update the competition title, date, and points based on user request
+//             - Date should be in format "Month Year"
+//             - Points should be 2-4 specific achievements in array format
+//             - Include rankings, team size, or selection criteria
+//             - Use quantifiable metrics and specific technical details
+//             - Make achievements impressive and credible
+//             - Focus on skills demonstrated and recognition received
+//         `;
 
-        const analysis = await generateAIContent(aiPrompt);
+//         const analysis = await generateAIContent(aiPrompt);
         
-        return res.status(200).json({
-            success: true,
-            data: analysis,
-            message: "AI suggestions generated successfully"
-        });
-    } catch (err) {
-        console.error('Competitions generation error:', err);
-        res.status(500).json({ success: false, error: 'Failed to generate competition suggestions', message: 'Failed to generate suggestions' });
-    }
-};
+//         return res.status(200).json({
+//             success: true,
+//             data: analysis,
+//             message: "AI suggestions generated successfully"
+//         });
+//     } catch (err) {
+//         console.error('Competitions generation error:', err);
+//         res.status(500).json({ success: false, error: 'Failed to generate competition suggestions', message: 'Failed to generate suggestions' });
+//     }
+// };
