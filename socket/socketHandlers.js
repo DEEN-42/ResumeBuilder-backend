@@ -3,6 +3,12 @@ import Resume from '../models/resumeDatamodel.js';
 export const handleSocketConnection = (io, socket) => {
   // console.log(`User connected: ${socket.userEmail}`);
 
+  // Helper function to check if user has access to resume
+  const hasAccess = (resume, userEmail) => {
+    return resume.owner === userEmail || 
+           resume.shared.some(sharedUser => sharedUser.email === userEmail);
+  };
+
   // Join resume room
   socket.on('join-resume-room', async (id) => {
     try {
@@ -17,7 +23,8 @@ export const handleSocketConnection = (io, socket) => {
         return;
       }
 
-      if (resume.owner !== socket.userEmail && !resume.shared.includes(socket.userEmail)) {
+      // Fixed: Check shared users correctly
+      if (!hasAccess(resume, socket.userEmail)) {
         // console.log(`Access denied for user: ${socket.userEmail} to resume: ${id}`);
         socket.emit('error', { message: 'Access denied' });
         return;
@@ -64,7 +71,8 @@ export const handleSocketConnection = (io, socket) => {
         return;
       }
 
-      if (resume.owner !== socket.userEmail && !resume.shared.includes(socket.userEmail)) {
+      // Fixed: Check shared users correctly
+      if (!hasAccess(resume, socket.userEmail)) {
         socket.emit('error', { message: 'Access denied' });
         return;
       }

@@ -69,7 +69,7 @@ const googleLogin = async (req, res) => {
         });
 
         const payload = ticket.getPayload();
-        console.log(payload);
+        // console.log(payload);
         const { sub: googleId, name, email, picture } = payload;
 
         // Authenticate or create user
