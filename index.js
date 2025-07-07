@@ -12,8 +12,8 @@ const app = express();
 const server = createServer(app);
 
 const allowedOrigins = [
-  "https://resumebuilder-frontend-i6nn.vercel.app",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  process.env.FRONTEND_URL
 ];
 const io = new Server(server, {
   cors: {
@@ -33,8 +33,6 @@ import userRoute from './Routes/userRoute.js';
 import resumeRoute from './Routes/resumeRoutes.js';
 import aiRoutes from './Routes/aiRoutes.js';
 const PORT = process.env.PORT;
-
-app.use(cors());
 
 connectToDatabase();
 
