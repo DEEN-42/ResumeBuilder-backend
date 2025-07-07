@@ -148,6 +148,7 @@ export const internships = async (req, res) => {
 
             Guidelines:
             - Keep the same JSON structure as input
+            - dont send the location as response output
             - Update only the fields that need improvement based on user request
             - If user doesn't specify changes for a field, keep it similar but potentially enhanced
             - Description should be 2-3 impactful lines separated by \\n

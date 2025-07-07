@@ -16,7 +16,7 @@ const registerUser = async (req, res) => {
         const token = jwt.sign(
             { email: user.email },
             JWT_SECRET,
-            { expiresIn: "5h" }
+            { expiresIn: "40m" }
         );
 
         const resumes = await fetchResumesForUser(user.email);
@@ -39,7 +39,7 @@ const loginUser = async (req, res) => {
         const token = jwt.sign(
             { email: user.email },
             JWT_SECRET,
-            { expiresIn: "5h" }
+            { expiresIn: "40m" }
         );
 
         const resumes = await fetchResumesForUser(user.email);
@@ -57,7 +57,7 @@ const loginUser = async (req, res) => {
 const googleLogin = async (req, res) => {
     try {
         const { credential } = req.body;
-        console.log(credential);
+        // console.log(credential);
         if (!credential) {
             return res.status(400).json({ message: 'Google credential is required' });
         }
@@ -79,7 +79,7 @@ const googleLogin = async (req, res) => {
         const token = jwt.sign(
             { email: user.email },
             JWT_SECRET,
-            { expiresIn: "5h" }
+            { expiresIn: "40m" }
         );
 
         // Fetch user's resumes
@@ -134,9 +134,8 @@ const renewToken = async (req, res) => {
         const newtoken = jwt.sign(
             { email: user.email },
             JWT_SECRET,
-            { expiresIn: "20m" }
+            { expiresIn: "40m" }
         );
-
         res.status(200).json({
             message: 'Token renewed successfully',
             token: newtoken,

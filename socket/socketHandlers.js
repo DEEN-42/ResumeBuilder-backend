@@ -44,8 +44,8 @@ export const handleSocketConnection = (io, socket) => {
         message: `${socket.userEmail} joined the resume`
       });
 
-      // Send current users list to the joining user
-      socket.emit('users-in-room', usersInRoom);
+      // Send current users list to all the users
+      io.to(id).emit('users-in-room', usersInRoom);
 
       // Send current resume data to the joining user
       socket.emit('resume-loaded', { resume });

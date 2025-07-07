@@ -16,8 +16,10 @@ export const fetchResumesForUser = async (email) => {
 // ✅ 2. Route Handler: for GET /resumes/list
 export const getAllResumes = async (req, res) => {
     try {
-        const email = req.user.email;
+        const email = req.email;
+        // console.log(email);
         const data = await fetchResumesForUser(email);
+        // console.log(data);
         res.status(200).json(data);
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch resumes", error: error.message });
