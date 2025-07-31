@@ -20,7 +20,6 @@ const startServer = async () => {
   const server = createServer(app);
 
   const allowedOrigins = [
-    "http://localhost:5173",
     "https://resumebuilder-frontend-i6nn.vercel.app",
   ];
 
