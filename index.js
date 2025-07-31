@@ -19,11 +19,7 @@ const startServer = async () => {
   const app = express();
   const server = createServer(app);
 
-  const allowedOrigins = [
-    "http://localhost:5173",
-    "https://resumebuilder-frontend-i6nn.vercel.app",
-    process.env.FRONTEND_URL,
-  ];
+  const allowedOrigins = ["https://resumebuilder-frontend-i6nn.vercel.app"];
 
   const pubClient = createClient({ url: process.env.REDIS_URL });
   const subClient = pubClient.duplicate();
@@ -45,7 +41,13 @@ const startServer = async () => {
 
   app.use(
     cors({
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
       credentials: true,
     })
   );
