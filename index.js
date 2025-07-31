@@ -35,7 +35,7 @@ const startServer = async () => {
     },
     // <-- 4. Tell Socket.IO to use the Redis adapter
     adapter: createAdapter(pubClient, subClient, {
-      requestsTimeout: 10000, // time in ms (10 seconds)
+      requestsTimeout: 5000, // time in ms (10 seconds)
     }),
   });
 
