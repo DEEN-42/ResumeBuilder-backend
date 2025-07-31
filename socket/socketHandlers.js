@@ -1,16 +1,22 @@
-import Resume from '../models/resumeDatamodel.js';
-
-export const handleSocketConnection = (io, socket) => {
+import Resume from "../models/resumeDatamodel.js";
+import {
+  addUserToResume,
+  removeUserFromResume,
+  getUsersInResume,
+} from "../RedisHelperFunctions/redisHelperFunctions.js";
+export const handleSocketConnection = (io, socket, redisClient) => {
   // console.log(`User connected: ${socket.userEmail}`);
 
   // Helper function to check if user has access to resume
   const hasAccess = (resume, userEmail) => {
-    return resume.owner === userEmail || 
-           resume.shared.some(sharedUser => sharedUser.email === userEmail);
+    return (
+      resume.owner === userEmail ||
+      resume.shared.some((sharedUser) => sharedUser.email === userEmail)
+    );
   };
 
   // Join resume room
-  socket.on('join-resume-room', async (id) => {
+  socket.on("join-resume-room", async (id) => {
     try {
       // console.log(`Attempting to join resume room: ${id} for user: ${socket.userEmail}`);
 
@@ -19,14 +25,14 @@ export const handleSocketConnection = (io, socket) => {
 
       if (!resume) {
         // console.log(`Resume not found: ${id}`);
-        socket.emit('error', { message: 'Resume not found' });
+        socket.emit("error", { message: "Resume not found" });
         return;
       }
 
       // Fixed: Check shared users correctly
       if (!hasAccess(resume, socket.userEmail)) {
         // console.log(`Access denied for user: ${socket.userEmail} to resume: ${id}`);
-        socket.emit('error', { message: 'Access denied' });
+        socket.emit("error", { message: "Access denied" });
         return;
       }
 
@@ -35,31 +41,31 @@ export const handleSocketConnection = (io, socket) => {
       socket.currentResumeId = id;
 
       // Get all users currently in the room
-      const socketsInRoom = await io.in(id).fetchSockets();
-      const usersInRoom = socketsInRoom.map(s => s.userEmail);
+      await addUserToResume(redisClient, id, socket.userEmail);
+      const usersInRoom = await getUsersInResume(redisClient, id);
 
       // Notify others in the room that a new user joined
-      socket.to(id).emit('user-joined', {
+      socket.to(id).emit("user-joined", {
         userEmail: socket.userEmail,
-        message: `${socket.userEmail} joined the resume`
+        message: `${socket.userEmail} joined the resume`,
       });
 
       // Send current users list to all the users
-      io.to(id).emit('users-in-room', usersInRoom);
+      io.to(id).emit("users-in-room", usersInRoom);
 
       // Send current resume data to the joining user
-      socket.emit('resume-loaded', { resume });
+      socket.emit("resume-loaded", { resume });
 
       // console.log(`User ${socket.userEmail} joined resume room: ${id}`);
       // console.log(`Current users in room ${id}:`, usersInRoom);
     } catch (error) {
-      console.error('Error joining resume room:', error);
-      socket.emit('error', { message: 'Failed to join resume room' });
+      console.error("Error joining resume room:", error);
+      socket.emit("error", { message: "Failed to join resume room" });
     }
   });
 
   // Handle resume updates
-  socket.on('update-resume', async (data) => {
+  socket.on("update-resume", async (data) => {
     try {
       const { id, updates } = data;
 
@@ -67,13 +73,13 @@ export const handleSocketConnection = (io, socket) => {
       const resume = await Resume.findOne({ id });
 
       if (!resume) {
-        socket.emit('error', { message: 'Resume not found' });
+        socket.emit("error", { message: "Resume not found" });
         return;
       }
 
       // Fixed: Check shared users correctly
       if (!hasAccess(resume, socket.userEmail)) {
-        socket.emit('error', { message: 'Access denied' });
+        socket.emit("error", { message: "Access denied" });
         return;
       }
 
@@ -82,41 +88,41 @@ export const handleSocketConnection = (io, socket) => {
       await resume.save();
 
       // Broadcast the update to all users in the room except the sender
-      socket.to(id).emit('resume-updated', {
+      socket.to(id).emit("resume-updated", {
         updates,
         updatedBy: socket.userEmail,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Send confirmation to the sender
-      socket.emit('update-confirmed', {
-        message: 'Resume updated successfully',
-        timestamp: new Date()
+      socket.emit("update-confirmed", {
+        message: "Resume updated successfully",
+        timestamp: new Date(),
       });
 
       // console.log(`Resume ${id} updated by ${socket.userEmail}`);
     } catch (error) {
-      console.error('Error updating resume:', error);
-      socket.emit('error', { message: 'Failed to update resume' });
+      console.error("Error updating resume:", error);
+      socket.emit("error", { message: "Failed to update resume" });
     }
   });
 
   // Handle leaving resume room
-  socket.on('leave-resume', async (id) => {
+  socket.on("leave-resume", async (id) => {
     socket.leave(id);
-    
+    await removeUserFromResume(redisClient, id, socket.userEmail);
+
     // Notify others in the room
-    socket.to(id).emit('user-left', {
+    socket.to(id).emit("user-left", {
       userEmail: socket.userEmail,
-      message: `${socket.userEmail} left the resume`
+      message: `${socket.userEmail} left the resume`,
     });
 
     // Get updated users list and broadcast to remaining users
-    const socketsInRoom = await io.in(id).fetchSockets();
-    const usersInRoom = socketsInRoom.map(s => s.userEmail);
-    
+    const usersInRoom = await getUsersInResume(redisClient, id);
+
     // Send updated users list to remaining users in room
-    io.to(id).emit('users-in-room', usersInRoom);
+    io.to(id).emit("users-in-room", usersInRoom);
 
     if (socket.currentResumeId === id) {
       socket.currentResumeId = null;
@@ -127,20 +133,27 @@ export const handleSocketConnection = (io, socket) => {
   });
 
   // Handle disconnect
-  socket.on('disconnect', async () => {
+  socket.on("disconnect", async () => {
     if (socket.currentResumeId) {
       // Notify others in the room
-      socket.to(socket.currentResumeId).emit('user-left', {
+      await removeUserFromResume(
+        redisClient,
+        socket.currentResumeId,
+        socket.userEmail
+      );
+      socket.to(socket.currentResumeId).emit("user-left", {
         userEmail: socket.userEmail,
-        message: `${socket.userEmail} disconnected`
+        message: `${socket.userEmail} disconnected`,
       });
 
       // Get updated users list and broadcast to remaining users
-      const socketsInRoom = await io.in(socket.currentResumeId).fetchSockets();
-      const usersInRoom = socketsInRoom.map(s => s.userEmail);
-      
+      const usersInRoom = await getUsersInResume(
+        redisClient,
+        socket.currentResumeId
+      );
+
       // Send updated users list to remaining users in room
-      io.to(socket.currentResumeId).emit('users-in-room', usersInRoom);
+      io.to(socket.currentResumeId).emit("users-in-room", usersInRoom);
 
       // console.log(`User ${socket.userEmail} disconnected from resume room: ${socket.currentResumeId}`);
       // console.log(`Remaining users in room ${socket.currentResumeId}:`, usersInRoom);

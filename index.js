@@ -1,56 +1,80 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { createClient } from "redis";
+import { createAdapter } from "@socket.io/redis-adapter";
 dotenv.config();
-import { connectToDatabase } from './db.js';
-import { socketAuth } from './middleware/socketAuth.js';
-import { handleSocketConnection } from './socket/socketHandlers.js';
+import { connectToDatabase } from "./db.js";
+import { socketAuth } from "./middleware/socketAuth.js";
+import { handleSocketConnection } from "./socket/socketHandlers.js";
+import userRoute from "./Routes/userRoute.js";
+import resumeRoute from "./Routes/resumeRoutes.js";
+import aiRoutes from "./Routes/aiRoutes.js";
 
-const app = express();
-const server = createServer(app);
+const PORT = process.argv[2] || process.env.PORT || 3000;
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL
-];
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET','POST','PUT'],
-    credentials: true
-  }
-});
+const startServer = async () => {
+  const app = express();
+  const server = createServer(app);
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true   // if you use cookies / auth headers
-  })
-);
-import userRoute from './Routes/userRoute.js';
-import resumeRoute from './Routes/resumeRoutes.js';
-import aiRoutes from './Routes/aiRoutes.js';
-const PORT = process.env.PORT;
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    process.env.FRONTEND_URL,
+  ];
 
-connectToDatabase();
+  
+  const pubClient = createClient({ url: process.env.REDIS_URL });
+  const subClient = pubClient.duplicate();
 
-app.use(express.json());
-app.use('/users', userRoute); 
-app.use('/resumes', resumeRoute);
-app.use('/ai', aiRoutes);
-// Socket.io middleware for authentication
-io.use(socketAuth);
+  // Connect to Redis before starting the server
+  await Promise.all([pubClient.connect(), subClient.connect()]);
 
-// Handle socket connections
-io.on('connection', (socket) => {
-  handleSocketConnection(io, socket);
-});
+  const io = new Server(server, {
+    cors: {
+      origin: allowedOrigins,
+      methods: ["GET", "POST", "PUT"],
+      credentials: true,
+    },
+    // <-- 4. Tell Socket.IO to use the Redis adapter
+    adapter: createAdapter(pubClient, subClient, {
+      requestsTimeout: 10000, // time in ms (10 seconds)
+    }),
+  });
 
-// Make io available globally for use in other files
-app.set('io', io);
+  app.use(
+    cors({
+      origin: allowedOrigins,
+      credentials: true,
+    })
+  );
 
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  await connectToDatabase();
+
+  app.use(express.json());
+  app.use("/users", userRoute);
+  app.use("/resumes", resumeRoute);
+  app.use("/ai", aiRoutes);
+
+  // Socket.io middleware for authentication
+  io.use(socketAuth);
+
+  // Handle socket connections
+  io.on("connection", (socket) => {
+    handleSocketConnection(io, socket, pubClient);
+  });
+
+  // Make io available globally for use in other files
+  app.set("io", io);
+
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log("✅ Redis adapter connected for Socket.IO scaling.");
+  });
+};
+
+startServer().catch((err) => {
+  console.error("❌ Failed to start server:", err);
 });

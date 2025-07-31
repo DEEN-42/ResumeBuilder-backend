@@ -15,10 +15,10 @@ export const imageUpload = async (req, res) => {
     const filePath = req.file.path;
 
     const result = await cloudinary.uploader.upload(filePath, {
-      folder: 'resume_profile_pictures'
+      folder: 'user_profile_pictures'
     });
-
-    fs.unlinkSync(filePath); // Clean up temp file
+    //delete the temporary file after upload finishes
+    fs.unlinkSync(filePath);
 
     res.json({ success: true, url: result.secure_url });
   } catch (error) {

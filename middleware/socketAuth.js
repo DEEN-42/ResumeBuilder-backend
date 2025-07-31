@@ -9,7 +9,6 @@ export const socketAuth = (socket, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.userId = decoded.userId;
     socket.userEmail = decoded.email;
     
     next();
