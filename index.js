@@ -19,7 +19,10 @@ const startServer = async () => {
   const app = express();
   const server = createServer(app);
 
-  const allowedOrigins = ["https://resumebuilder-frontend-i6nn.vercel.app"];
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "https://resumebuilder-frontend-i6nn.vercel.app",
+  ];
 
   const pubClient = createClient({ url: process.env.REDIS_URL });
   const subClient = pubClient.duplicate();
