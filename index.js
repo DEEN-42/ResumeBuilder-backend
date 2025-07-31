@@ -13,19 +13,14 @@ import userRoute from "./Routes/userRoute.js";
 import resumeRoute from "./Routes/resumeRoutes.js";
 import aiRoutes from "./Routes/aiRoutes.js";
 
-const PORT = process.argv[2] || process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 const startServer = async () => {
   const app = express();
   const server = createServer(app);
 
-  const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    process.env.FRONTEND_URL,
-  ];
+  const allowedOrigins = ["http://localhost:5173", process.env.FRONTEND_URL];
 
-  
   const pubClient = createClient({ url: process.env.REDIS_URL });
   const subClient = pubClient.duplicate();
 
