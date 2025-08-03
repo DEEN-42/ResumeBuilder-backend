@@ -6,7 +6,7 @@ import crypto from "crypto"; // Import the crypto module
 import Resume from "../models/resumeDatamodel.js";
 import User from "../models/usermodel.js";
 import { fileURLToPath } from "url";
-import { sendInstantEmail } from "../Controllers/mailFunctionality.js";
+import { sendInstantEmail } from "./mailFunctionality.js";
 const { GITHUB_TOKEN, GITHUB_USERNAME, VERCEL_TOKEN } = process.env;
 
 // Initialize Octokit for GitHub API calls
