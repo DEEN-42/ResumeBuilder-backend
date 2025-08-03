@@ -14,7 +14,11 @@ const resumeSchema = new mongoose.Schema({
     selectedTemplate: { type: String, default: 'iitkg' },
     globalStyles: { type: mongoose.Schema.Types.Mixed },  
     resumeData: { type: mongoose.Schema.Types.Mixed },    
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    deployment: {
+      githubRepo: {type: String, unique: true},
+      vercelUrl : {type: String, unique: true},
+    },
   }, { timestamps: true }
 );
 

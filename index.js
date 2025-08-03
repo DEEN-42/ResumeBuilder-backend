@@ -12,6 +12,7 @@ import { handleSocketConnection } from "./socket/socketHandlers.js";
 import userRoute from "./Routes/userRoute.js";
 import resumeRoute from "./Routes/resumeRoutes.js";
 import aiRoutes from "./Routes/aiRoutes.js";
+import deployRoute from "./Routes/deployRoute.js";
 
 const PORT = process.env.PORT || 3030;
 
@@ -19,9 +20,7 @@ const startServer = async () => {
   const app = express();
   const server = createServer(app);
 
-  const allowedOrigins = [
-    "https://resumebuilder-frontend-i6nn.vercel.app",
-  ];
+  const allowedOrigins = ["https://resumebuilder-frontend-i6nn.vercel.app"];
 
   const pubClient = createClient({ url: process.env.REDIS_URL });
   const subClient = pubClient.duplicate();
@@ -60,7 +59,7 @@ const startServer = async () => {
   app.use("/users", userRoute);
   app.use("/resumes", resumeRoute);
   app.use("/ai", aiRoutes);
-
+  app.use("/deploy", deployRoute);
   // Socket.io middleware for authentication
   io.use(socketAuth);
 

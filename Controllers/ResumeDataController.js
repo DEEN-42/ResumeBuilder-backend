@@ -310,6 +310,7 @@ export const updateResumeSocket = async (req, res) => {
     await resume.save();
     // Get socket.io instance
     const io = req.app.get("io");
+
     // Broadcast the update to all users in the room except the sender
     io.to(id).emit("resume-updated", {
       // <— fixed
